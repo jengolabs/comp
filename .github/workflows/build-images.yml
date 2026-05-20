@@ -1,0 +1,94 @@
+name: Build & Push Images
+
+on:
+  push:
+    branches:
+      - jengolabs
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or SHA to build"
+        required: false
+        default: jengolabs
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 913524938281.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  build:
+    name: Build ${{ matrix.service.name }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: app
+            repo: comp/app
+            dockerfile: Dockerfile
+            target: app
+            build_args: |
+              NEXT_PUBLIC_BETTER_AUTH_URL=https://comp.internal.jengolabs.com
+              NEXT_PUBLIC_PORTAL_URL=https://comp.jengolabs.com
+              NEXT_PUBLIC_API_URL=https://comp-api.internal.jengolabs.com
+              NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+              NEXT_PUBLIC_IS_DUB_ENABLED=false
+          - name: portal
+            repo: comp/portal
+            dockerfile: Dockerfile
+            target: portal
+            build_args: |
+              NEXT_PUBLIC_BETTER_AUTH_URL=https://comp.internal.jengolabs.com
+              NEXT_PUBLIC_PORTAL_URL=https://comp.jengolabs.com
+              NEXT_PUBLIC_API_URL=https://comp-api.internal.jengolabs.com
+              NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+              NEXT_PUBLIC_IS_DUB_ENABLED=false
+          - name: api
+            repo: comp/api
+            dockerfile: apps/api/Dockerfile.multistage
+            target: production
+            build_args: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::913524938281:role/github-ecr-push-comp
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "sha_tag=sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "date_tag=jengolabs-$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.service.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          target: ${{ matrix.service.target }}
+          build-args: ${{ matrix.service.build_args }}
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ matrix.service.repo }}:latest
+            ${{ env.ECR_REGISTRY }}/${{ matrix.service.repo }}:${{ steps.tags.outputs.sha_tag }}
+            ${{ env.ECR_REGISTRY }}/${{ matrix.service.repo }}:${{ steps.tags.outputs.date_tag }}
+          cache-from: type=gha,scope=${{ matrix.service.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}

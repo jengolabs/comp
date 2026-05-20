@@ -1,0 +1,57 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # Weekly on Monday at 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync trycompai/comp → jengolabs/comp
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout fork (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/trycompai/comp.git
+          git fetch upstream main
+
+      - name: Create sync branch
+        run: |
+          BRANCH="sync/upstream-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git merge upstream/main --no-edit || true
+          git push origin "$BRANCH"
+          echo "SYNC_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "$SYNC_BRANCH" \
+            --title "chore: sync upstream trycompai/comp $(date +%Y-%m-%d)" \
+            --body "$(cat <<'EOF'
+          Automated weekly sync from [trycompai/comp](https://github.com/trycompai/comp) main.
+
+          **Review checklist before merging:**
+          - [ ] \`apps/api/src/config/aws.config.ts\` — credentials still optional (IRSA)
+          - [ ] \`apps/api/src/app/s3.ts\` — S3Client still uses credential provider chain when keys absent
+          - [ ] No new env var requirements that need adding to \`api.env\` in infrastructure
+          - [ ] Dockerfile changes that might affect the build
+
+          After merging to \`main\`, rebase \`jengolabs\` branch on top of it.
+          EOF
+          )" || echo "PR already exists or nothing to sync"
