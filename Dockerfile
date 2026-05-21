@@ -129,9 +129,15 @@ COPY apps/portal ./apps/portal
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
 
-# Pre-combine schemas and build db package for portal build
+# Build db package (combine schemas + tsc) so @trycompai/db types are available
 RUN cd packages/db && node scripts/combine-schemas.js && bun run build
-RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
+
+# Populate portal's prisma/schema/ directory with individual model files from
+# packages/db — mirrors what `bun run db:getschema` does locally.
+# prisma generate --schema=prisma/schema (in build:docker) reads this directory.
+RUN find apps/portal/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -delete && \
+    find packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' \
+      -exec cp {} apps/portal/prisma/schema/ \;
 
 # Build web-relevant workspace packages. device-agent (electron-vite) and
 # framework-editor-cli are excluded — they cannot build in headless Docker.
