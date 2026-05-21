@@ -135,6 +135,10 @@ COPY --from=deps /app/node_modules ./node_modules
 RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
 
+# Build workspace packages whose package.json exports point to dist/
+RUN cd packages/auth && bun run build
+RUN cd packages/company && bun run build
+
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
