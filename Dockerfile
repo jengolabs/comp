@@ -72,8 +72,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # `--ignore-scripts` so packages/db's postinstall was skipped; we run
 # it explicitly here so `next build` can resolve the generated runtime
 # + types when it imports @prisma/client.
-RUN cd packages/db && node scripts/combine-schemas.js \
-                   && node scripts/generate-prisma-client-js.js
+RUN cd packages/db && node scripts/combine-schemas.js && bun run build
 
 # Build workspace packages whose package.json exports point to dist/.
 # next build resolves these through their exports field, so dist/ must
@@ -134,6 +133,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Pre-combine schemas for portal build
 RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
+RUN cd packages/db && bun run build
 
 # Build workspace packages whose package.json exports point to dist/
 RUN cd packages/auth && bun run build
