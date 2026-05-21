@@ -74,12 +74,9 @@ COPY --from=deps /app/node_modules ./node_modules
 # + types when it imports @prisma/client.
 RUN cd packages/db && node scripts/combine-schemas.js && bun run build
 
-# Build workspace packages whose package.json exports point to dist/.
-# next build resolves these through their exports field, so dist/ must
-# exist before the Next.js compiler runs.
-RUN cd packages/auth && bun run build
-RUN cd packages/billing && bun run build
-RUN cd packages/company && bun run build
+# Build all workspace packages that declare a build script. bun skips
+# packages without one, so this is safe to run unconditionally.
+RUN bun run --filter './packages/*' build
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -133,11 +130,9 @@ COPY --from=deps /app/node_modules ./node_modules
 # Pre-combine schemas for portal build
 RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
-RUN cd packages/db && bun run build
 
-# Build workspace packages whose package.json exports point to dist/
-RUN cd packages/auth && bun run build
-RUN cd packages/company && bun run build
+# Build all workspace packages (db included); bun skips packages without a build script
+RUN bun run --filter './packages/*' build
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
