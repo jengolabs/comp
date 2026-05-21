@@ -52,6 +52,11 @@ jobs:
             dockerfile: apps/api/Dockerfile.multistage
             target: production
             build_args: ""
+          - name: migrator
+            repo: comp/migrator
+            dockerfile: Dockerfile
+            target: migrator
+            build_args: ""
 
     steps:
       - name: Checkout
