@@ -1,4 +1,8 @@
 import './config/load-env';
+import { EventEmitter } from 'node:events';
+// OTEL auto-instrumentation adds ~11 finish listeners per ServerResponse;
+// raise the limit to suppress false-positive leak warnings.
+EventEmitter.defaultMaxListeners = 20;
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
