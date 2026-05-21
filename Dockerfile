@@ -75,6 +75,13 @@ COPY --from=deps /app/node_modules ./node_modules
 RUN cd packages/db && node scripts/combine-schemas.js \
                    && node scripts/generate-prisma-client-js.js
 
+# Build workspace packages whose package.json exports point to dist/.
+# next build resolves these through their exports field, so dist/ must
+# exist before the Next.js compiler runs.
+RUN cd packages/auth && bun run build
+RUN cd packages/billing && bun run build
+RUN cd packages/company && bun run build
+
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ARG NEXT_PUBLIC_PORTAL_URL
