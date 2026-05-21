@@ -74,9 +74,11 @@ COPY --from=deps /app/node_modules ./node_modules
 # + types when it imports @prisma/client.
 RUN cd packages/db && node scripts/combine-schemas.js && bun run build
 
-# Build all workspace packages that declare a build script. bun skips
-# packages without one, so this is safe to run unconditionally.
-RUN bun run --filter './packages/*' build
+# Build web-relevant workspace packages. device-agent (electron-vite) and
+# framework-editor-cli are excluded — they cannot build in headless Docker.
+RUN for pkg in analytics auth billing company email integration-platform kv ui; do \
+      echo "=== Building packages/$pkg ===" && cd /app/packages/$pkg && bun run build; \
+    done
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -127,12 +129,15 @@ COPY apps/portal ./apps/portal
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
 
-# Pre-combine schemas for portal build
-RUN cd packages/db && node scripts/combine-schemas.js
+# Pre-combine schemas and build db package for portal build
+RUN cd packages/db && node scripts/combine-schemas.js && bun run build
 RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
 
-# Build all workspace packages (db included); bun skips packages without a build script
-RUN bun run --filter './packages/*' build
+# Build web-relevant workspace packages. device-agent (electron-vite) and
+# framework-editor-cli are excluded — they cannot build in headless Docker.
+RUN for pkg in analytics auth billing company email integration-platform kv ui; do \
+      echo "=== Building packages/$pkg ===" && cd /app/packages/$pkg && bun run build; \
+    done
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
