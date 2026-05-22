@@ -32,9 +32,9 @@ jobs:
             dockerfile: Dockerfile
             target: app
             build_args: |
-              NEXT_PUBLIC_BETTER_AUTH_URL=https://comp.internal.jengolabs.com
-              NEXT_PUBLIC_PORTAL_URL=https://comp.jengolabs.com
-              NEXT_PUBLIC_API_URL=https://comp-api.internal.jengolabs.com
+              NEXT_PUBLIC_BETTER_AUTH_URL=https://comp.jengo.run
+              NEXT_PUBLIC_PORTAL_URL=https://trust.jengolabs.com
+              NEXT_PUBLIC_API_URL=https://comp.api.jengo.run
               NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
               NEXT_PUBLIC_IS_DUB_ENABLED=false
           - name: portal
@@ -42,9 +42,9 @@ jobs:
             dockerfile: Dockerfile
             target: portal
             build_args: |
-              NEXT_PUBLIC_BETTER_AUTH_URL=https://comp.internal.jengolabs.com
-              NEXT_PUBLIC_PORTAL_URL=https://comp.jengolabs.com
-              NEXT_PUBLIC_API_URL=https://comp-api.internal.jengolabs.com
+              NEXT_PUBLIC_BETTER_AUTH_URL=https://comp.jengo.run
+              NEXT_PUBLIC_PORTAL_URL=https://trust.jengolabs.com
+              NEXT_PUBLIC_API_URL=https://comp.api.jengo.run
               NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
               NEXT_PUBLIC_IS_DUB_ENABLED=false
           - name: api
