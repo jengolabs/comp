@@ -270,7 +270,8 @@ export const auth = betterAuth({
         domain: cookieDomain,
       },
       defaultCookieAttributes: {
-        sameSite: 'lax' as const,
+        // SameSite=None required for cross-site requests from trust.jengolabs.com → comp.api.jengo.run
+        sameSite: 'none' as const,
         secure: true,
       },
     }),
