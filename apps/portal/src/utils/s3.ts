@@ -28,6 +28,10 @@ if (!BUCKET_NAME || !APP_AWS_REGION) {
   );
 }
 
+if (!BUCKET_NAME && process.env.NODE_ENV === 'production') {
+  console.error('AWS_BUCKET_NAME is not defined.');
+}
+
 // Use static credentials when provided; otherwise fall back to the default
 // credential chain (IRSA token file injected by EKS pod identity webhook).
 export const s3Client = new S3Client({
