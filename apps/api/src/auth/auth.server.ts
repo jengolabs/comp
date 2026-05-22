@@ -32,6 +32,9 @@ function getCookieDomain(): string | undefined {
   if (baseUrl.includes('trycomp.ai')) {
     return '.trycomp.ai';
   }
+  if (baseUrl.includes('jengo.run')) {
+    return '.jengo.run';
+  }
   return undefined;
 }
 
@@ -77,7 +80,9 @@ export function isStaticTrustedOrigin(origin: string): boolean {
       url.hostname.endsWith('.trycomp.ai') ||
       url.hostname.endsWith('.staging.trycomp.ai') ||
       url.hostname.endsWith('.trust.inc') ||
-      url.hostname === 'trust.inc'
+      url.hostname === 'trust.inc' ||
+      url.hostname.endsWith('.jengo.run') ||
+      url.hostname.endsWith('.jengolabs.com')
     );
   } catch {
     return false;
