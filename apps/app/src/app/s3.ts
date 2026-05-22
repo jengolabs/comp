@@ -13,7 +13,7 @@ export const APP_AWS_ORG_ASSETS_BUCKET = process.env.APP_AWS_ORG_ASSETS_BUCKET;
 let s3ClientInstance: S3Client;
 
 try {
-  if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
+  if (!BUCKET_NAME || !APP_AWS_REGION) {
     console.error('[S3] AWS S3 credentials or configuration missing. Check environment variables.');
     throw new Error('AWS S3 credentials or configuration missing. Check environment variables.');
   }
@@ -21,10 +21,11 @@ try {
   s3ClientInstance = new S3Client({
     endpoint: APP_AWS_ENDPOINT || undefined,
     region: APP_AWS_REGION,
-    credentials: {
-      accessKeyId: APP_AWS_ACCESS_KEY_ID,
-      secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
-    },
+    // Use static credentials when provided; otherwise fall back to the default
+    // credential chain (IRSA token file injected by EKS pod identity webhook).
+    ...(APP_AWS_ACCESS_KEY_ID && APP_AWS_SECRET_ACCESS_KEY
+      ? { credentials: { accessKeyId: APP_AWS_ACCESS_KEY_ID, secretAccessKey: APP_AWS_SECRET_ACCESS_KEY } }
+      : {}),
     forcePathStyle: !!APP_AWS_ENDPOINT,
   });
 } catch (error) {
